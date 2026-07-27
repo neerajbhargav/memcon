@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+store.db
+.cursor/rules/memcon-context.mdc
+.cursor/mcp.json
