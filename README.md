@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# memcon
-=======
 # memcon 🧠
 
 **One memory. Every agent.**
