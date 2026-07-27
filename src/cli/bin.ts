@@ -5,6 +5,10 @@ import { runSyncCommand } from './commands/sync.js';
 import { runServeCommand } from './commands/serve.js';
 import { runStatusCommand } from './commands/status.js';
 import { runHandoffCommand } from './commands/handoff.js';
+import { runResolveCommand } from './commands/resolve.js';
+import { runExportCommand, runImportCommand } from './commands/export.js';
+import { installDaemon, uninstallDaemon, getDaemonStatus } from '../daemon/installer.js';
+import chalk from 'chalk';
 
 const program = new Command();
 
@@ -26,13 +30,59 @@ program
 
 program
   .command('serve')
-  .description('Start memcon MCP server over stdio and file watcher daemon')
-  .action(() => runServeCommand());
+  .description('Start memcon MCP server over stdio, HTTP REST/SSE server, and file watcher daemon')
+  .option('-p, --port <port>', 'HTTP REST/SSE server port', '13370')
+  .action((options) => runServeCommand({ port: Number(options.port) }));
 
 program
   .command('status')
   .description('View cross-agent context dashboard, stored facts, and conflicts')
   .action(() => runStatusCommand());
+
+program
+  .command('resolve')
+  .description('Interactively resolve divergent facts / conflicts across agents')
+  .action(() => runResolveCommand());
+
+program
+  .command('export [path]')
+  .description('Export stored facts and handoffs to a JSON backup file')
+  .action((path) => runExportCommand(path));
+
+program
+  .command('import <path>')
+  .description('Import facts and handoffs from a JSON backup file')
+  .action((path) => runImportCommand(path));
+
+const daemonCmd = program
+  .command('daemon')
+  .description('Manage background OS daemon (macOS LaunchAgent / Linux systemd)');
+
+daemonCmd
+  .command('install')
+  .description('Install and launch background OS daemon on user login')
+  .action(() => {
+    const res = installDaemon();
+    if (res.success) console.log(chalk.green(`\n✅ ${res.message}\n`));
+    else console.log(chalk.red(`\n❌ ${res.message}\n`));
+  });
+
+daemonCmd
+  .command('uninstall')
+  .description('Stop and remove background OS daemon')
+  .action(() => {
+    const res = uninstallDaemon();
+    if (res.success) console.log(chalk.green(`\n✅ ${res.message}\n`));
+    else console.log(chalk.red(`\n❌ ${res.message}\n`));
+  });
+
+daemonCmd
+  .command('status')
+  .description('Check OS background daemon status')
+  .action(() => {
+    const st = getDaemonStatus();
+    console.log(chalk.bold(`\nDaemon Status: ${st.message}\n`));
+  });
 
 program
   .command('handoff')
