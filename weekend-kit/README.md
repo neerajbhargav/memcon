@@ -1,44 +1,80 @@
-# Weekend kit: one memory for every AI agent, no code required
+# Weekend kit: one memory for every AI agent
 
-The file-only version of a shared memory layer for Claude Code, Codex, Cursor and Hermes.
-Everything here is plain markdown plus one 30-line Python hook. Copy, rename, done.
+The file-only version of a shared memory layer for Claude Code, Codex, Cursor, and Hermes.
+Six Markdown files, one search command, and an optional 48-line retrieval hook. No daemon, no database, no API key.
 
 ## The shape
 
-```
+```text
 ~/brain/
-  memory/                 # Layer 0: one fact per file + MEMORY.md (one line per file)
-  vault/                  # Layer 1: open this folder in Obsidian
-    Home.md
-    Decisions-Log.md      # numbered, dated, attributed rulings. Grep it before calling anything "open".
-    CURRENT-STATE.md      # 10-second read: what's live now, one lane per agent
-    SESSIONS-HANDOFF.md   # append-only, newest on top
-    Memory-Sources.md     # one row per memory file -> which vault page covers it
-    Daily Notes/          # history. Never rewritten.
-    Systems/
+  AGENTS.md          # router: what to read, in what order, and the safety rules
+  CURRENT.md         # volatile state; every claim carries checked_at + a verify command
+  DECISIONS.md       # numbered rulings with rationale and what they supersede
+  HANDOFF.md         # append-only, newest on top; three lines per session
+  memory/            # durable facts, one topic per file, with provenance
+  playbooks/         # repeatable procedures with prerequisites and verification
+  recall-tests.md    # known questions -> the file that must answer them
 ```
 
-## Steps
+## Install (10 minutes)
 
-1. `mkdir -p ~/brain/memory ~/brain/vault/"Daily Notes" ~/brain/vault/Systems`
-2. Copy `templates/*.md` into `~/brain/vault/` (and `templates/memory-file.md` as a model for `~/brain/memory/`).
-3. Copy `templates/AGENTS.md` to the root of the folder that holds your repos. Then, there and in every repo:
-   `ln -sf AGENTS.md CLAUDE.md` and commit the symlink.
-4. Cursor: copy `templates/brain.mdc` to `~/.cursor/rules/brain.mdc`. Codex reads `AGENTS.md` by itself.
-   Hermes: put the hard rules into `MEMORY.md` via its memory tool; put the read-first order into a `start-here` skill.
-5. Index (needs bun): `bun install -g gbrain && gbrain init --pglite && gbrain import ~/brain/vault --no-embed && gbrain import ~/brain/memory --no-embed && gbrain extract links --dir ~/brain/vault`
-6. Hook: copy `hooks/brain-context.py` to `~/.claude/hooks/` and merge `hooks/settings.snippet.json` into `~/.claude/settings.json`.
-7. End of every day, in this order: **sync** (memory files + index) → **ingest** (vault pages in place, today's daily note, decisions, re-index, commit) → **report** (if you have a stakeholder).
+```bash
+mkdir -p ~/brain/{memory,playbooks}
+cp templates/AGENTS.md templates/CURRENT.md templates/DECISIONS.md templates/HANDOFF.md templates/recall-tests.md ~/brain/
+cp templates/memory-topic.md ~/brain/memory/EXAMPLE.md
+cp templates/playbook.md    ~/brain/playbooks/EXAMPLE.md
+```
+
+Then point each harness at the router:
+
+- **Codex, Cursor, Hermes** read `AGENTS.md` natively. Copy `templates/AGENTS.md` into each repo you work in (or keep one at the root of the folder that holds your repos) and edit the paths.
+- **Claude Code** reads `CLAUDE.md`. In each repo: `ln -s AGENTS.md CLAUDE.md` and commit the symlink.
+- **Cursor-only behavior** (optional) goes in `.cursor/rules/*.mdc`; `AGENTS.md` alone is enough for most projects.
+
+Search before you install anything else:
+
+```bash
+rg -n -i "webhook|retry" ~/brain
+```
+
+## Optional: index + prompt-time retrieval
+
+When keyword search starts missing aliases and related concepts, add [gbrain](https://github.com/garrytan/gbrain). Commands from its [install guide](https://github.com/garrytan/gbrain/blob/master/docs/INSTALL.md):
+
+```bash
+bun install -g github:garrytan/gbrain#latest-stable
+gbrain init --pglite
+gbrain import ~/brain --no-embed
+gbrain search "webhook retry"          # two or three nouns, never a sentence
+```
+
+Re-run `gbrain import ~/brain --no-embed` after you edit the brain.
+
+For Claude Code only, `hooks/brain-context.py` runs on every prompt, extracts two or three discriminating terms, calls `gbrain search`, and injects a bounded block of matches. It has a 12-second timeout and always exits 0.
+
+```bash
+cp hooks/brain-context.py ~/.claude/hooks/
+# merge hooks/settings.snippet.json into ~/.claude/settings.json
+```
+
+The other harnesses do not get automatic retrieval from this kit; they follow the router's instruction to search. That is deliberate. Add automation per harness only after manual search has proved worth automating.
+
+## The habit that makes it work
+
+Before every session ends:
+
+1. Update `CURRENT.md` if live state changed (and update `checked_at`).
+2. Append a three-line entry to `HANDOFF.md`.
+3. Record a decision in `DECISIONS.md` only if a decision was actually made. Mark what it supersedes.
+4. If you changed the router, index, or hook: run the questions in `recall-tests.md` and confirm search returns the named file.
 
 ## Rules
 
-- One fact, one home. Update the owning layer; never write the same fact into two by hand.
+- One fact, one home. Update the owning file; never write the same fact into two by hand.
 - Measurement beats text. Every stated state carries the command that produces it.
-- A superseded decision gets a `> ⛔ Superseded by Decision N` line under its heading and may not be cited as live.
-- Search with two or three nouns, never a sentence.
-- Never hand-edit generated files.
-- Routers point; they don't contain.
-- Hooks always exit 0.
-- Daily notes are append-only. Corrections are dated lines in today's note.
-- The agent never types a credential.
-- Anything done three times becomes a skill.
+- A superseded decision gets a `> Superseded by Decision N` line under its heading and may not be cited as live.
+- Routers point; they do not contain. If `AGENTS.md` grows past a screen, move the content into `memory/` or `playbooks/` and link it.
+- Never store secrets, credentials, cookies, private records, or raw chat dumps in the brain.
+- Hooks always exit 0. A retrieval hook that can block a prompt is worse than no hook.
+- `HANDOFF.md` is append-only. Corrections are new dated lines, not edits.
+- Anything done three times becomes a playbook.

@@ -13,7 +13,7 @@ It is a working v1 with known sharp edges. Read [Status](#status) before you run
 - **Not on npm yet.** `npx memcon` does not work. Install from source (below).
 - **v1 is bidirectional and daemon-based.** That design caused three real incidents on the author's machine (self-ingestion loop, a truncated `AGENTS.md`, and an 805 KB always-loaded context file). The current `main` carries the self-emission guards that stop the loop; the daemon still exists.
 - **v2 is being redesigned as emitter-only, budgeted, and daemon-free.** The spec is [issue #1](https://github.com/neerajbhargav/memcon/issues/1). Contributions welcome there.
-- **The lazy, file-only version of the same idea needs no code at all.** See [`weekend-kit/`](./weekend-kit/) for the templates: a router, a decisions register, a live-state file, a handoff log, and a retrieval hook. Most people should start there.
+- **The lazy, file-only version of the same idea needs no daemon and no database.** See [`weekend-kit/`](./weekend-kit/): six Markdown templates (router, current state, decisions, handoff, memory topic, playbook), a recall-test sheet, and an optional 48-line Claude Code retrieval hook. Most people should start there.
 
 ---
 
