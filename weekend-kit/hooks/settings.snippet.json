@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 ~/.claude/hooks/brain-context.py 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+---
+description: Shared-brain read-first order and hard rules (mirror of ~/AGENTS.md)
+alwaysApply: true
+---
+Read first: ~/brain/vault/CURRENT-STATE.md, then ~/brain/memory/MEMORY.md, then this repo's AGENTS.md.
+grep -i ~/brain/vault/Decisions-Log.md before calling anything "open".
+Retrieval: gbrain search "<2-3 nouns>" (PATH needs ~/.bun/bin).
+Hard rules: no destructive ops without confirmation; secrets only in .env and never printed;
+diff against origin/main never HEAD; a ⛔ Superseded decision is dead; measurement beats text.
+Before you stop: update your lane in CURRENT-STATE.md and append to SESSIONS-HANDOFF.md.
