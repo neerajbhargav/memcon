@@ -3,9 +3,19 @@ import path from 'path';
 import { getAllFacts } from '../store/facts.js';
 import { getPendingHandoffs } from '../store/handoffs.js';
 import { getMemconDir } from '../config/index.js';
+import { isSelfFact } from '../util/self.js';
+
+/** Archive file, so facts keep their full text — but one fact must not dwarf the rest. */
+const MAX_CHARS_PER_FACT = 8_000;
+
+function body(text: string): string {
+  return text.length > MAX_CHARS_PER_FACT
+    ? text.slice(0, MAX_CHARS_PER_FACT) + `\n\n*[truncated at ${MAX_CHARS_PER_FACT} chars]*`
+    : text;
+}
 
 export function emitUniversalContextMd(targetPath?: string): string {
-  const facts = getAllFacts();
+  const facts = getAllFacts().filter((f) => !isSelfFact(f));
   const handoffs = getPendingHandoffs();
 
   const rules = facts.filter(f => f.category === 'rule');
@@ -25,7 +35,7 @@ export function emitUniversalContextMd(targetPath?: string): string {
     markdown += `*No decisions recorded yet.*\n\n`;
   } else {
     for (const d of decisions) {
-      markdown += `### ${d.key} (Source: ${d.source})\n${d.content}\n\n`;
+      markdown += `### ${d.key} (Source: ${d.source})\n${body(d.content)}\n\n`;
     }
   }
 
@@ -34,7 +44,7 @@ export function emitUniversalContextMd(targetPath?: string): string {
     markdown += `*No active rules recorded yet.*\n\n`;
   } else {
     for (const r of rules) {
-      markdown += `### ${r.key} (Source: ${r.source})\n${r.content}\n\n`;
+      markdown += `### ${r.key} (Source: ${r.source})\n${body(r.content)}\n\n`;
     }
   }
 
@@ -43,7 +53,7 @@ export function emitUniversalContextMd(targetPath?: string): string {
     markdown += `*No session state recorded yet.*\n\n`;
   } else {
     for (const s of sessionStates) {
-      markdown += `### ${s.key} (Source: ${s.source}, Updated: ${s.updatedAt})\n${s.content}\n\n`;
+      markdown += `### ${s.key} (Source: ${s.source}, Updated: ${s.updatedAt})\n${body(s.content)}\n\n`;
     }
   }
 
@@ -52,7 +62,7 @@ export function emitUniversalContextMd(targetPath?: string): string {
     markdown += `*No technical facts recorded yet.*\n\n`;
   } else {
     for (const t of technicals) {
-      markdown += `### ${t.key} (Source: ${t.source})\n${t.content}\n\n`;
+      markdown += `### ${t.key} (Source: ${t.source})\n${body(t.content)}\n\n`;
     }
   }
 

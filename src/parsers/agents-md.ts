@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { FactCategory } from '../types.js';
+import { stripMemconBlock } from '../util/self.js';
 
 export function parseAgentsMd(filePath: string): Array<{
   key: string;
@@ -10,7 +11,8 @@ export function parseAgentsMd(filePath: string): Array<{
 }> {
   if (!fs.existsSync(filePath)) return [];
 
-  const raw = fs.readFileSync(filePath, 'utf-8');
+  // Never ingest our own emitted block — that is what makes the file double every sync.
+  const raw = stripMemconBlock(fs.readFileSync(filePath, 'utf-8'));
   const sections = raw.split(/(?=\n##\s+)/);
   const results: Array<{
     key: string;

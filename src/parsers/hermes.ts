@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { FactCategory } from '../types.js';
+import { isSelfGenerated } from '../util/self.js';
 
 export function parseHermesMemories(hermesMemDir?: string): Array<{
   key: string;
@@ -23,7 +24,9 @@ export function parseHermesMemories(hermesMemDir?: string): Array<{
   }> = [];
 
   const memoryFile = path.join(dir, 'MEMORY.md');
-  if (fs.existsSync(memoryFile)) {
+  // A MEMORY.md that memcon wrote is not a source — ingesting it replaces Hermes's
+  // own memories with memcon's summary of them, one truncation deeper each pass.
+  if (fs.existsSync(memoryFile) && !isSelfGenerated(fs.readFileSync(memoryFile, 'utf-8'))) {
     const raw = fs.readFileSync(memoryFile, 'utf-8');
     // Split by markdown headers (# or ##) or § delimiters
     const sections = raw.split(/(?=\n#|\n§|\n-\s+\*\*)/);

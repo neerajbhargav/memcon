@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { parseFrontmatter } from './frontmatter.js';
 import { FactCategory } from '../types.js';
+import { CURSOR_RULE_BASENAME, isSelfGenerated } from '../util/self.js';
 
 export function parseCursorRules(rulesDir: string): Array<{
   key: string;
@@ -24,8 +25,10 @@ export function parseCursorRules(rulesDir: string): Array<{
     const files = fs.readdirSync(rulesDir);
     for (const file of files) {
       if (!file.endsWith('.mdc')) continue;
+      if (file === CURSOR_RULE_BASENAME) continue; // our own output
       const filePath = path.join(rulesDir, file);
       const raw = fs.readFileSync(filePath, 'utf-8');
+      if (isSelfGenerated(raw)) continue;
       const parsed = parseFrontmatter(raw);
 
       const ruleName = path.basename(file, '.mdc');
